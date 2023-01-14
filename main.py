@@ -2,6 +2,12 @@ import customtkinter
 import constants as const
 from download import check_url, download_yt
 from PIL import Image
+from sys import platform
+import sys, os
+from tkinter import PhotoImage
+from tkinter import Listbox
+from tkinter import Scrollbar
+from threading import *
 
 SAVE_LOCATION = ""
 
@@ -12,7 +18,7 @@ class Page(customtkinter.CTkFrame):
 
     def show(self):
         self.lift()
-
+    
 
 def list_string(arr):
     if len(arr) == 1:
@@ -44,12 +50,16 @@ class HomePage(Page):
         self.inputBox.grid(row=1, column=0, sticky="S", padx=80)
 
         downloadBtn = customtkinter.CTkButton(
-            self, text="Download", width=112, command=self.download)
+            self, text="Download", width=112, command=self.threading)
         downloadBtn.grid(row=2, column=0, sticky="N", pady=30)
 
+    def threading(self):
+        t1 = Thread(target = self.download)
+        t1.start()
+    
     def download(self):
         url = self.inputBox.get()
-        print(check_url(url))
+        # print(check_url(url))
         download_yt(url, SAVE_LOCATION)
 
 
@@ -90,8 +100,33 @@ class SettingsPage(Page):
             global SAVE_LOCATION
             SAVE_LOCATION = self.inputBox.get()
             print(SAVE_LOCATION)
+            
+class DownloadHistory(Page):
+    def __init__(self, *args, **kwargs):
+        Page.__init__(self, *args, **kwargs)
+        self.rowconfigure((0, 1, 2), weight=1)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
 
-
+        self.listbox()
+        
+        title = customtkinter.CTkLabel(
+            self, justify="center", text="Download History", font=("arial bold", 20))
+        title.grid(row=0, column=0, sticky="N")
+    
+    def listbox(self):
+        self.listbox = Listbox (
+            self, bg = '#e6e2d8',
+            width = 85
+        )
+        
+        with open('history.txt', 'r') as file:
+            pos = 0
+            for line in file:
+                self.listbox.insert(pos, line[:len(line) - 1])
+                pos += 1
+        
+        self.listbox.grid(row=1, column=0, sticky="N")
 class AboutPage(Page):
     def __init__(self, *args, **kwargs):
         Page.__init__(self, *args, **kwargs)
@@ -107,6 +142,7 @@ class AboutPage(Page):
             const.TITLE, list_string(const.AUTHORS)), font=("arial", 14))
         desc.grid(row=1, column=0, sticky="N")
 
+        
 
 class App(customtkinter.CTk):
 
@@ -142,15 +178,25 @@ class App(customtkinter.CTk):
         btnSettings.grid(row=2, column=0, ipady=10, pady=0, padx=12)
         btnSettings.bind("<Button-1>", lambda e: self.settingsPage.show())
 
+        btnDownloadHistory = customtkinter.CTkButton(
+            sidebar_frame, text="History Download", width=112)
+        btnDownloadHistory.grid(row=3, column=0, ipady=10, pady=0, padx=12)
+        btnDownloadHistory.bind("<Button-1>", lambda e: self.downloadHistory.show())
+        
         btnAbout = customtkinter.CTkButton(
             sidebar_frame, text="About", width=112)
-        btnAbout.grid(row=3, column=0, ipady=10, pady=0, padx=12)
+        btnAbout.grid(row=4, column=0, ipady=10, pady=0, padx=12)
         btnAbout.bind("<Button-1>", lambda e: self.aboutPage.show())
 
     def configure_window(self):
         window_title = "MP3 Downloader by %s" % (list_string(const.AUTHORS))
         self.title(window_title)
-        self.iconbitmap("assets/light/mp3downloader_lightmode.ico")
+        
+        if platform == 'linux' or platform == 'linux2':
+            self.iconphoto(True, PhotoImage(file=os.path.join(sys.path[0], 'assets/light/mp3downloader_lightmode.png')))
+        else:
+            self.iconbitmap("assets/light/mp3downloader_lightmode.ico")
+
         self.geometry("%dx%d" % const.WINDOW_SIZE)
         self.resizable(True, False)
 
@@ -162,6 +208,9 @@ class App(customtkinter.CTk):
         self.settingsPage.place(in_=pageframe, x=0, y=0,
                                 relwidth=1, relheight=1)
 
+        self.downloadHistory = DownloadHistory(self)
+        self.downloadHistory.place(in_=pageframe, x=0, y=0, relwidth=1, relheight=1)
+        
         self.aboutPage = AboutPage(self)
         self.aboutPage.place(in_=pageframe, x=0, y=0, relwidth=1, relheight=1)
 

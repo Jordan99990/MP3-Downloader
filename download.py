@@ -1,7 +1,7 @@
 from pytube import YouTube
+from sclib import SoundcloudAPI, Track
 import os
-
-download_history = []
+from sys import platform
 
 def check_url(url: str) -> str:
     if not '.com' in url:
@@ -14,17 +14,47 @@ def check_url(url: str) -> str:
     return 'neither'
 
 def download_yt(url, save_path) -> None:
-  print(save_path)
-  url = YouTube(url)
-  audio = url.streams.filter(only_audio = True).first()
+  choice = check_url(url)
+  
+  if choice == 'neither':
+    return
+  elif choice == 'youtube':
+  # print(save_path)
+    url = YouTube(url)
+    audio = url.streams.filter(only_audio = True).first()
+        
+    output = audio.download(output_path = save_path)
+        
+    base, ext = os.path.splitext(output)
+    new_file = base + '.mp3'
       
-  output = audio.download(output_path = save_path)
-      
-  base, ext = os.path.splitext(output)
-  new_file = base + '.mp3'
-  os.rename(output, new_file)
-      
-  print(url.title, 'was downloaded')
+    # download_history.append (
+    #   new_file[:(new_file.count('/'))]
+    # )
+    # print(new_file[new_file.rfind('/') + 1:])
+    # os.rename(output, new_file)
+    
+    with open('history.txt', 'a') as file:
+      file.write(new_file[new_file.rfind('/') + 1 : ] + '\n')
+      file.close()
+    
+  else:
+    api = SoundcloudAPI()
+    track = api.resolve(url)
+    
+    name = f'{track.artist} - {track.title}.mp3'
+    
+    if platform == 'linux' or platform == 'linux2':
+      output = f'{save_path}/{name}'
+    else:
+      output = f'{save_path}\{name}'
+    
+    with open(output, 'wb+') as file:
+      track.write_mp3_to(file)
+    
+    with open('history.txt', 'a') as file:
+      file.write(name + '\n')
+      file.close()
 
 
 # def get_audio_file() -> None:

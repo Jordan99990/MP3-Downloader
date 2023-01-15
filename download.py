@@ -45,12 +45,14 @@ def download_yt(url, save_path) -> None:
     name = f'{track.artist} - {track.title}.mp3'
     
     if platform == 'linux' or platform == 'linux2':
-      output = f'{save_path}/{name}'
+      output = f'{save_path}{name}'
     else:
-      output = f'{save_path}\{name}'
+      output = f'{save_path}{name}'
+    
     
     with open(output, 'wb+') as file:
       track.write_mp3_to(file)
+      file.close()
     
     with open('history.txt', 'a') as file:
       file.write(name + '\n')
@@ -79,4 +81,7 @@ def download_yt(url, save_path) -> None:
 #     download_history.append(url.title)
         
 # if __name__ == '__main__':
-#     get_audio_file()
+#     download_yt(
+#       'https://soundcloud.com/travisscott-2/a-man',
+#       '/home/norby/Videos/'
+#     )

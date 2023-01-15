@@ -108,17 +108,20 @@ class DownloadHistory(Page):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
-        self.listbox()
-        
         title = customtkinter.CTkLabel(
             self, justify="center", text="Download History", font=("arial bold", 20))
         title.grid(row=0, column=0, sticky="N")
-    
-    def listbox(self):
+
         self.listbox = Listbox (
-            self, bg = '#e6e2d8',
-            width = 85
+            self, bg = '#e8e7e6',
+            width = 85 
         )
+        
+        self.update_history()
+        
+        
+    def update_history(self):
+        self.listbox.delete(0, 'end')
         
         with open('history.txt', 'r') as file:
             pos = 0
@@ -127,6 +130,13 @@ class DownloadHistory(Page):
                 pos += 1
         
         self.listbox.grid(row=1, column=0, sticky="N")
+    
+    def show(self): # metoda da override la apelul update_history()
+        # de fiecare data cand ii accesata prin DownloadHistory
+        # metoda e apelata
+        super().show()
+        self.update_history()
+        
 class AboutPage(Page):
     def __init__(self, *args, **kwargs):
         Page.__init__(self, *args, **kwargs)

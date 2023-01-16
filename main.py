@@ -166,7 +166,7 @@ class App(customtkinter.CTk):
         page_frame.pack(side="left", fill="both", expand=True)
         self.load_pages(page_frame)
 
-        sidebar_frame.rowconfigure((0, 1, 2, 3), weight=1)
+        sidebar_frame.rowconfigure((0, 1, 2, 3, 4), weight=1)
         sidebar_frame.columnconfigure(1, weight=1)
 
         mp3downloader_png = customtkinter.CTkImage(

@@ -1,12 +1,11 @@
 import customtkinter
 import constants as const
-from download import check_url, download_yt
+from download import download_yt
 from PIL import Image
 from sys import platform
 import sys, os
 from tkinter import PhotoImage
 from tkinter import Listbox
-from tkinter import Scrollbar
 from threading import *
 
 SAVE_LOCATION = ""
@@ -39,7 +38,7 @@ class HomePage(Page):
         title.grid(row=0, column=0, sticky="N", padx=0)
 
         desc = customtkinter.CTkLabel(
-            self, justify="center", text="Save YouTube videos as MP3 files", font=("arial", 14))
+            self, justify="center", text="Save YouTube videos and Soundcloud music as MP3 files", font=("arial", 14))
         desc.grid(row=0, column=0, sticky="S")
 
         urlDesc = customtkinter.CTkLabel(

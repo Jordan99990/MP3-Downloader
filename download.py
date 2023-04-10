@@ -79,9 +79,3 @@ def download_yt(url, save_path) -> None:
         
 #     print(url.title, 'was downloaded')
 #     download_history.append(url.title)
-        
-# if __name__ == '__main__':
-#     download_yt(
-#       'https://soundcloud.com/travisscott-2/a-man',
-#       '/home/norby/Videos/'
-#     )

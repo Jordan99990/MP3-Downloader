@@ -130,9 +130,7 @@ class DownloadHistory(Page):
         
         self.listbox.grid(row=1, column=0, sticky="N")
     
-    def show(self): # metoda da override la apelul update_history()
-        # de fiecare data cand ii accesata prin DownloadHistory
-        # metoda e apelata
+    def show(self): # overwrite method
         super().show()
         self.update_history()
         

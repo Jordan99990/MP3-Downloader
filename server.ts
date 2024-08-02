@@ -42,28 +42,6 @@ const handler = async (req: Request): Promise<Response> => {
         });
     }
 
-    if (url.pathname.startsWith('/download/') && req.method === 'GET') {
-        const fileName = url.pathname.split('/').pop();
-        const filePath = `./downloads/${fileName}`;
-
-        try {
-            const file = await Deno.open(filePath);
-            const fileStats = await Deno.stat(filePath);
-            const fileStream = file.readable;
-
-            return new Response(fileStream, {
-                headers: {
-                    'Content-Type': 'video/mp4',
-                    'Content-Length': fileStats.size.toString(),
-                    'Content-Disposition': `attachment; filename="${fileName}"`,
-                    'Access-Control-Allow-Origin': '*', 
-                },
-            });
-        } catch (error) {
-            return new Response('File not found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
-        }
-    }
-
     if (req.method === 'POST') {
         try {
             const { urls, directory } = await req.json();

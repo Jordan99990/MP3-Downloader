@@ -129,24 +129,24 @@
             const directory = document.getElementById('directory').value;
 
             if (links.length === 0) {
-            return;
+                return;
             }
 
             try {
-            const response = await fetch('http://localhost:8080/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ urls: links, directory })
-            });
+                const response = await fetch('http://localhost:8080/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls: links, directory })
+                });
 
-            if (response.ok) {
-                window.alert('Download started');
-            } else {
-                const errorText = await response.text();
-                window.alert(`Download failed: ${errorText}`);  
-            }
+                if (response.ok) {
+                    window.alert('Download started');
+                } else {
+                    const errorText = await response.text();
+                    window.alert(`Download failed: ${errorText}`);  
+                }
             } catch (error) {
-            window.alert(`Download failed: ${error.message}`);
+                window.alert(`Download failed: ${error.message}`);
             }
         }
     </script>

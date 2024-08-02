@@ -54,10 +54,16 @@
     <div class="bg-white p-4 rounded shadow-lg">
         <div class="text-center">
             <h1 class="text-2xl font-bold mb-4">YouTube Downloader</h1>
-        </div>
+        </div>  
         <form id="download-form" class="mb-4">
             <input type="text" id="url" placeholder="Enter YouTube URL" class="form-control mb-2" required>
             <input type="text" id="directory" placeholder="Enter directory" class="form-control mb-2" required>
+
+            <select id="format" class="form-control mb-2">
+                <option value="mp4">MP4</option>
+                <option value="mp3">MP3</option>
+            </select>
+            
             <button type="button" onclick="addLink()" class="btn btn-primary w-100 mb-2">Add Link</button>
             <button type="button" onclick="startDownload()" class="btn btn-primary w-100 mb-2">Download</button>
             <button type="button" onclick="clearAll()" class="btn btn-danger w-100 mb-2">Clear All</button>

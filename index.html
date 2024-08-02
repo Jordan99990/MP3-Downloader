@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Downloader</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" href="https://www.youtube.com/s/desktop/7e9a8b9f/img/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="./youtube-brands-solid.svg" type="svg">
+
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .bg-white {
+            background-color: #1e1e1e !important;
+        }
+        .form-control, .btn, .list-group-item {
+            background-color: #2e2e2e;
+            color: #e0e0e0;
+            border: none;
+        }
+        .form-control::placeholder {
+            color: #bdbdbd;
+        }
+        .form-control:focus {
+            background-color: #2e2e2e;
+            color: #e0e0e0;
+            border-color: #6200ea;
+            box-shadow: none;
+        }
+        .btn-primary {
+            background-color: #6200ea;
+            border-color: #6200ea;
+        }
+
+        .btn-primary:hover {
+            background-color: #6200ea;
+            border-color: #6200ea;
+        }
+
+        .btn-danger {
+            background-color: #b00020;
+            border-color: #b00020;
+        }
+        .btn-primary:hover, .btn-danger:hover {
+            opacity: 0.8;
+        }
+    </style>
+
+</head>
+<body class="d-flex align-items-center justify-content-center vh-100">
+    <div class="bg-white p-4 rounded shadow-lg">
+        <div class="text-center">
+            <h1 class="text-2xl font-bold mb-4">YouTube Downloader</h1>
+        </div>
+        <form id="download-form" class="mb-4">
+            <input type="text" id="url" placeholder="Enter YouTube URL" class="form-control mb-2" required>
+            <input type="text" id="directory" placeholder="Enter directory" class="form-control mb-2" required>
+            <button type="button" onclick="addLink()" class="btn btn-primary w-100 mb-2">Add Link</button>
+            <button type="button" onclick="startDownload()" class="btn btn-primary w-100 mb-2">Download</button>
+            <button type="button" onclick="clearAll()" class="btn btn-danger w-100 mb-2">Clear All</button>
+        </form>
+        <ul id="link-list" class="list-group mb-4"></ul>
+        <p id="status" class="mt-4"></p>
+    </div>
+
+    <script>
+        let links = [];
+
+        function addLink() {
+            const urlInput = document.getElementById('url');
+            const link = urlInput.value;
+            if (link) {
+                links.push(link);
+                urlInput.value = '';
+
+                const linkList = document.getElementById('link-list');
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                listItem.dataset.link = link;
+                listItem.innerHTML = `
+                    <span class="me-2">${link}</span>
+                    <div>
+                        <button onclick="modifyLink('${link}')" class="btn btn-primary btn-sm me-2">Modify</button>
+                        <button onclick="deleteLink('${link}')" class="btn btn-danger btn-sm">Delete</button>
+                    </div>
+                `;
+                linkList.appendChild(listItem);
+            }
+        }
+
+        function deleteLink(link) {
+            links = links.filter(item => item !== link);
+            const linkList = document.getElementById('link-list');
+            const listItem = linkList.querySelector(`[data-link="${link}"]`);
+            if (listItem) {
+                linkList.removeChild(listItem);
+            }
+        }
+
+        function clearAll() {
+            links = [];
+            const linkList = document.getElementById('link-list');
+            linkList.innerHTML = '';
+        }
+
+        function modifyLink(link) {
+            const newLink = prompt('Enter the modified link:', link);
+            if (newLink) {
+                const index = links.indexOf(link);
+                if (index > -1) {
+                    links[index] = newLink;
+
+                    const linkList = document.getElementById('link-list');
+                    const listItem = linkList.querySelector(`[data-link="${link}"]`);
+                    if (listItem) {
+                        listItem.dataset.link = newLink;
+                        listItem.querySelector('span').textContent = newLink;
+                        listItem.querySelector('.btn-primary').setAttribute('onclick', `modifyLink('${newLink}')`);
+                        listItem.querySelector('.btn-danger').setAttribute('onclick', `deleteLink('${newLink}')`);
+                    }
+                }
+            }
+        }
+
+        async function startDownload() {
+            const directory = document.getElementById('directory').value;
+
+            if (links.length === 0) {
+            return;
+            }
+
+            try {
+            const response = await fetch('http://localhost:8080/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ urls: links, directory })
+            });
+
+            if (response.ok) {
+                window.alert('Download started');
+            } else {
+                const errorText = await response.text();
+                window.alert(`Download failed: ${errorText}`);  
+            }
+            } catch (error) {
+            window.alert(`Download failed: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

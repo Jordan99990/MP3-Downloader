@@ -1,15 +1,24 @@
 import { ytDownload } from 'https://deno.land/x/yt_download/mod.ts';
 
 const port = 8080;
+const hostname = '0.0.0.0';
 
-const downloadVideo = async (url: string, dir: string, filename: string): Promise<void> => {
-    const videoId = url.replace('https://www.youtube.com/watch?v=', '');
+const downloadVideo = async (url: string, dir: string, filename: string, format: string): Promise<void> => {
+    url = url.replace('https://www.youtube.com/watch?v=', '');
 
     await Deno.mkdir(dir, { recursive: true });
 
-    const filePath = `${dir}/${filename}.mp4`;
+    let stream;
+    if (format === 'MP3') {
+        stream = await ytDownload(url, {
+            hasVideo: false,
+            hasAudio: true,
+        });
+    } else {
+        stream = await ytDownload(url);
+    }
 
-    const stream = await ytDownload(videoId);
+    const filePath = (format === 'MP3') ? `${dir}/${filename}.mp3` : `${dir}/${filename}.mp4`;
     
     const file = await Deno.open(filePath, {
         create: true,
@@ -20,9 +29,11 @@ const downloadVideo = async (url: string, dir: string, filename: string): Promis
     try {
         const reader = stream.getReader();
         const writer = file.write.bind(file);
-
-        for await (const chunk of reader) {
+        let result = await reader.read();
+        while (!result.done) {
+            const chunk = result.value;
             await writer(chunk);
+            result = await reader.read();
         }
     } finally {
         file.close();
@@ -30,33 +41,69 @@ const downloadVideo = async (url: string, dir: string, filename: string): Promis
 };
 
 const handler = async (req: Request): Promise<Response> => {
+    const url = new URL(req.url);
+
     if (req.method === 'OPTIONS') {
         return new Response(null, {
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type',
             },
         });
     }
 
-    if (req.method === 'POST') {
+    if (req.method === 'GET' && url.pathname === '/') {
+        const filePath = './index.html';
+        const file = await Deno.open(filePath);
+        const content = await Deno.readAll(file);
+        file.close();
+
+        return new Response(content, {
+            headers: {
+                'Content-Type': 'text/html',
+                'Access-Control-Allow-Origin': '*',
+            },
+        });
+    }
+
+    if (req.method === 'GET' && url.pathname.startsWith('/img/')) {
         try {
-            const { urls, directory } = await req.json();
+            const filePath = `.${url.pathname}`;
+            const file = await Deno.open(filePath);
+            const content = await Deno.readAll(file);
+            file.close();
 
-            if (!urls || !Array.isArray(urls) || urls.length === 0 || !directory) {
-                return new Response('Invalid request data', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
-            }
+            const contentType = url.pathname.endsWith('.svg') ? 'image/svg+xml' : 'application/octet-stream';
 
-            await Promise.all(urls.map((url, index) => downloadVideo(url, directory, `downloaded_video_${index + 1}`)));
-
-            return new Response('Download started', {
-                status: 200,
+            return new Response(content, {
                 headers: {
-                    'Content-Type': 'text/plain',
+                    'Content-Type': contentType,
                     'Access-Control-Allow-Origin': '*',
                 },
             });
+        } catch (error) {
+            return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/download') {
+        try {
+            const { urls, format, directory } = await req.json();
+            
+            if (urls && Array.isArray(urls) && urls.length > 0 && directory) {
+                await Promise.all(urls.map((url, index) => downloadVideo(url, directory, `downloaded_video_${index + 1}`, format)));
+
+                return new Response('Download started', {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'text/plain',
+                        'Access-Control-Allow-Origin': '*', 
+                    },
+                });
+            } else {
+                return new Response('Invalid request data', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+            }
         } catch (error) {
             return new Response('Error processing request', { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
@@ -65,4 +112,5 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response('Method not allowed', { status: 405, headers: { 'Access-Control-Allow-Origin': '*' } });
 };
 
-Deno.serve({ port }, handler);
+
+Deno.serve({ hostname, port }, handler);

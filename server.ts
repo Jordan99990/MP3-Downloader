@@ -1,4 +1,5 @@
-import { ytDownload } from 'https://deno.land/x/yt_download/mod.ts';
+import { ytDownload } from "https://deno.land/x/yt_download/mod.ts";
+import { readAll } from "https://deno.land/std@0.224.0/io/read_all.ts";
 
 const port = 8080;
 const hostname = '0.0.0.0';
@@ -62,7 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
         try {
             const filePath = './index.html';
             const file = await Deno.open(filePath);
-            const content = await Deno.readAll(file);
+            const content = await readAll(file);
             file.close();
 
             return new Response(content, {
@@ -81,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
         try {
             const filePath = `.${url.pathname}`;
             const file = await Deno.open(filePath);
-            const content = await Deno.readAll(file);
+            const content = await readAll(file);
             file.close();
 
             const contentType = url.pathname.endsWith('.svg') ? 'image/svg+xml' : 'application/octet-stream';

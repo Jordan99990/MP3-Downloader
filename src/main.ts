@@ -1,20 +1,27 @@
-import { ytDownload } from "https://deno.land/x/yt_download/mod.ts";
+// deno-lint-ignore-file
+import { ytDownload, getVideoInfo } from "https://deno.land/x/yt_download@1.10/mod.ts";
 import { readAll } from "https://deno.land/std@0.224.0/io/read_all.ts";
 
 const port = 8080;
 const hostname = '0.0.0.0';
-
-const downloadVideo = async (url: string, dir: string, filename: string, format: string): Promise<void> => {
+        
+const downloadVideo = async (url: string, dir: string, format: string): Promise<void> => {
     url = url.replace('https://www.youtube.com/watch?v=', '');
+    let filename = url;
 
     try {
-        await Deno.mkdir(dir, { recursive: true });
+        await Deno.mkdir(dir, { recursive: true }); 
+
+        const metadata: any = await getVideoInfo(url);
+        const title = metadata.microformat.playerMicroformatRenderer.title.simpleText.replace(/[<>:"\/\\|?*\x00-\x1F]/g, '');
+        filename = title;
 
         let stream;
         if (format === 'MP3') {
             stream = await ytDownload(url, {
                 hasVideo: false,
                 hasAudio: true,
+                mimeType: `audio/webm; codecs="opus"`,
             });
         } else {
             stream = await ytDownload(url);
@@ -78,14 +85,16 @@ const handler = async (req: Request): Promise<Response> => {
         }
     }
 
-    if (req.method === 'GET' && url.pathname.startsWith('/img/')) {
+    if (req.method === 'GET' && url.pathname.startsWith('/assets/')) {
         try {
-            const filePath = `.${url.pathname}`;
+            const filePath = `/app${url.pathname}`;
             const file = await Deno.open(filePath);
             const content = await readAll(file);
             file.close();
 
-            const contentType = url.pathname.endsWith('.svg') ? 'image/svg+xml' : 'application/octet-stream';
+            const contentType = url.pathname.endsWith('.svg') ? 'image/svg+xml' : 
+                                url.pathname.endsWith('.png') ? 'image/png' : 
+                                'application/octet-stream';
 
             return new Response(content, {
                 headers: {
@@ -102,11 +111,14 @@ const handler = async (req: Request): Promise<Response> => {
     if (req.method === 'POST' && url.pathname === '/download') {
         try {
             const { urls, format, directory } = await req.json();
+            const containerDir = '/app/downloads'; 
             
             if (urls && Array.isArray(urls) && urls.length > 0 && directory) {
-                await Promise.all(urls.map((url, index) => downloadVideo(url, directory, `downloaded_video_${index + 1}`, format)));
+                await Deno.mkdir(directory, { recursive: true });
 
-                return new Response('Download started', {
+                await Promise.all(urls.map((url) => downloadVideo(url, containerDir, format)));
+                
+                return new Response('Download completed and files moved', {
                     status: 200,
                     headers: {
                         'Content-Type': 'text/plain',
@@ -114,12 +126,23 @@ const handler = async (req: Request): Promise<Response> => {
                     },
                 });
             } else {
-                console.error('Invalid request data:', { urls, format, directory });
-                return new Response('Invalid request data', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+                return new Response('Invalid request', {
+                    status: 400,
+                    headers: {
+                        'Content-Type': 'text/plain',
+                        'Access-Control-Allow-Origin': '*', 
+                    },
+                });
             }
         } catch (error) {
-            console.error('Error processing download request:', error);
-            return new Response('Error processing request', { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+            console.error(`Error processing download:`, error);
+            return new Response('Error processing request', {
+                status: 500,
+                headers: {
+                    'Content-Type': 'text/plain',
+                    'Access-Control-Allow-Origin': '*', 
+                },
+            });
         }
     }
 

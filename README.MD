@@ -1,9 +1,9 @@
 <p align="center">
-    <img src="./img/1.png" alt="Image 1">
+    <img src="./assets/img/1.png" alt="Image 1">
 </p>
 
 <p align="center">
-    <img src="./img/2.png" alt="Image 2">
+    <img src="./assets/img/2.png" alt="Image 2">
 </p>
 
 

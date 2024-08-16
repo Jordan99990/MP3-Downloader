@@ -4,13 +4,37 @@ import { readAll } from "https://deno.land/std@0.224.0/io/read_all.ts";
 
 const port = 8080;
 const hostname = '0.0.0.0';
-        
+
+const convertMp4ToMp3 = async (inputFile: string, outputFile: string) => {
+    const ffmpegCommand = [
+        "ffmpeg",
+        "-i", inputFile,
+        "-q:a", "0",
+        "-map", "a",
+        outputFile
+    ];
+
+    const process = Deno.run({
+        cmd: ffmpegCommand,
+        stderr: "piped",
+        stdout: "piped"
+    });
+
+    const { code } = await process.status();
+    if (code !== 0) {
+        const error = new TextDecoder().decode(await process.stderrOutput());
+        throw new Error(`ffmpeg error: ${error}`);
+    }
+
+    process.close();
+};
+
 const downloadVideo = async (url: string, dir: string, format: string): Promise<void> => {
     url = url.replace('https://www.youtube.com/watch?v=', '');
     let filename = url;
 
     try {
-        await Deno.mkdir(dir, { recursive: true }); 
+        await Deno.mkdir(dir, { recursive: true });
 
         const metadata: any = await getVideoInfo(url);
         const title = metadata.microformat.playerMicroformatRenderer.title.simpleText.replace(/[<>:"\/\\|?*\x00-\x1F]/g, '');
@@ -18,34 +42,56 @@ const downloadVideo = async (url: string, dir: string, format: string): Promise<
 
         let stream;
         if (format === 'MP3') {
-            stream = await ytDownload(url, {
-                hasVideo: false,
-                hasAudio: true,
-                mimeType: `audio/webm; codecs="opus"`,
+            const mp4FilePath = `${dir}/${filename}.mp4`;
+            const mp3FilePath = `${dir}/${filename}.mp3`;
+
+            stream = await ytDownload(url);
+            const file = await Deno.open(mp4FilePath, {
+                create: true,
+                write: true,
+                truncate: true,
             });
+
+            try {
+                const reader = stream.getReader();
+                const writer = file.write.bind(file);
+                let result = await reader.read();
+
+                while (!result.done) {
+                    const chunk = result.value;
+                    await writer(chunk);
+                    result = await reader.read();
+                }
+            } finally {
+                file.close();
+            }
+
+            await convertMp4ToMp3(mp4FilePath, mp3FilePath);
+            await Deno.remove(mp4FilePath); 
+
         } else {
             stream = await ytDownload(url);
-        }
+            const filePath = `${dir}/${filename}.mp4`;
 
-        const filePath = (format === 'MP3') ? `${dir}/${filename}.mp3` : `${dir}/${filename}.mp4`;
+            const file = await Deno.open(filePath, {
+                create: true,
+                write: true,
+                truncate: true,
+            });
 
-        const file = await Deno.open(filePath, {
-            create: true,
-            write: true,
-            truncate: true,
-        });
+            try {
+                const reader = stream.getReader();
+                const writer = file.write.bind(file);
+                let result = await reader.read();
 
-        try {
-            const reader = stream.getReader();
-            const writer = file.write.bind(file);
-            let result = await reader.read();
-            while (!result.done) {
-                const chunk = result.value;
-                await writer(chunk);
-                result = await reader.read();
+                while (!result.done) {
+                    const chunk = result.value;
+                    await writer(chunk);
+                    result = await reader.read();
+                }
+            } finally {
+                file.close();
             }
-        } finally {
-            file.close();
         }
     } catch (error) {
         console.error(`Error downloading video from ${url}:`, error);

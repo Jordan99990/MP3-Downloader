@@ -1,5 +1,8 @@
 FROM denoland/deno:1.45.5
 
+RUN apt-get update && \
+    apt-get install -y ffmpeg
+
 WORKDIR /app
 
 COPY src/ /app/
